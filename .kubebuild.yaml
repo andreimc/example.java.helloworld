@@ -34,9 +34,6 @@ spec:
         git:
           repo: "{{workflow.parameters.repo}}"
           revision: "{{workflow.parameters.revision}}"
-          sshPrivateKeySecret:
-            name: "{{workflow.parameters.gitSecretName}}"
-            key: sshPrivateKey
     outputs:
       artifacts:
       - name: source
