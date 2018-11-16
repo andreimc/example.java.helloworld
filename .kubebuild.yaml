@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: vodaphone-
+
+spec:
+  entrypoint: website
+  arguments:
+    parameters:
+    - name: repo
+      value: git@github.com:andreimc/example.java.helloworld.git
+    - name: branch
+      value: master
+    - name: revision
+      value: HEAD
+
+  templates:
+  - name: website
+    steps:
+    - - name: checkout
+        template: checkout
+    - - name: test
+        template: test
+        arguments:
+          artifacts:
+          - name: source
+            from: "{{steps.checkout.outputs.artifacts.source}}"
+
+  - name: checkout
+    inputs:
+      artifacts:
+      - name: source
+        path: /src
+        git:
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
+          sshPrivateKeySecret:
+            name: "{{workflow.parameters.gitSecretName}}"
+            key: sshPrivateKey
+    outputs:
+      artifacts:
+      - name: source
+        path: /src
+    container:
+      image: kubebuild/scm:latest
+      command: ["/bin/sh", "-c"]
+      args: ["cd /src && git status && ls -l"]
+
+  - name: test
+    inputs:
+      artifacts:
+      - name: source
+        path: /src
+    container:
+      tty: true
+      image: openjdk
+      command: ["/bin/sh", "-c"]
+      args: ["
+        cd /src &&
+        java -cp HelloWorld/Main.java
+      "]
